@@ -1,0 +1,36 @@
+# =====================================================================
+# CONFIGURAÇÃO DE SEGURANÇA E URL REWRITING (Apache / InfinityFree)
+# =====================================================================
+
+# Ativar o motor de reescrita do Apache
+RewriteEngine On
+
+# 1. FORÇAR HTTPS (Garante tráfego seguro)
+# Compatível com o proxy reverso e SSL do InfinityFree/Cloudflare
+RewriteCond %{HTTP:X-Forwarded-Proto} !https
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# 2. BLOQUEAR ACESSO DIRETO A FICHEIROS CONFIDENCIAIS
+# Bloqueia tentativas de leitura direta de ficheiros de ambiente, base de dados ou dependências
+<FilesMatch "^\.env|schema\.sql|config\.php|\.env\.example|db_credentials\.php|\.sqlite$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# 3. OCULTAR A EXTENSÃO .PHP DAS URLs
+# Permite aceder a 'api/login' em vez de 'api/login.php' no browser e no Next.js
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^([^\.]+)$ $1.php [NC,L]
+
+# 4. TRATAMENTO DE CORS (Cross-Origin Resource Sharing)
+# Permite que o Next.js faça chamadas HTTP para o PHP se necessário (desenvolvimento ou domínios separados)
+Header always set Access-Control-Allow-Origin "*"
+Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+
+# Tratar pedidos OPTIONS (preflight) respondendo instantaneamente 200 OK sem executar scripts
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^(.*)$ - [R=200,L]

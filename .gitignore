@@ -1,0 +1,69 @@
+# =====================================================================
+# FICHEIRO DE EXCLUSÃO DO GIT (.gitignore)
+# =====================================================================
+# Projeto: Portfólio Profissional de Ayres Daio Neto
+# Objetivo: Garantir proteção absoluta contra o vazamento de segredos
+#           e chaves de API confidenciais para o GitHub público.
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# 1. Credenciais e Configurações Confidenciais (NUNCA ENVIAR PARA O GITHUB)
+# ---------------------------------------------------------------------
+backend/includes/db_credentials.php
+backend/includes/brevo_config.php
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 1.1. Bases de Dados Locais e Ficheiros de Build Compactados
+backend/database.sqlite
+portfolio_deploy.zip
+
+# 1.2. Backups e Uploads Dinâmicos (Mantendo ficheiros de segurança .htaccess)
+backend/backups/*
+!backend/backups/.htaccess
+backend/uploads/*
+!backend/uploads/.htaccess
+!backend/uploads/profile/
+backend/uploads/profile/*
+
+# ---------------------------------------------------------------------
+# 2. Dependências de Pacotes (Descarregadas dinamicamente via npm/composer)
+# ---------------------------------------------------------------------
+node_modules/
+frontend/node_modules/
+
+# ---------------------------------------------------------------------
+# 3. Distribuição e Compilação (Geradas dinamicamente via Vite/tsc)
+# ---------------------------------------------------------------------
+dist/
+frontend/dist/
+
+# ---------------------------------------------------------------------
+# 4. Configurações de Editores de Código Locais (Preferências pessoais)
+# ---------------------------------------------------------------------
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# ---------------------------------------------------------------------
+# 5. Ficheiros Temporários do Sistema Operativo (Lixo de SO)
+# ---------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+
+# ---------------------------------------------------------------------
+# 6. Registos de Erros e Logs de Execução
+# ---------------------------------------------------------------------
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+testsprite_tests\tmp\config.json

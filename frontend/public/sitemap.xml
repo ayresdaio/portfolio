@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+  =====================================================================
+  MAPA DO SITE (SITEMAP) - PORTFÓLIO AYRES DAIO NETO
+  =====================================================================
+  Este ficheiro auxilia motores de pesquisa (como Google e Bing) a descobrir
+  e rastrear de forma ultra rápida todas as rotas públicas do portfólio.
+  Domínio Principal: https://ayresdaioneto.pt/
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- 1. Página de Boas-vindas / Splash Entrada -->
+  <url>
+    <loc>https://ayresdaioneto.pt/</loc>
+    <lastmod>2026-05-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- 2. Página Principal (Home / Início) -->
+  <url>
+    <loc>https://ayresdaioneto.pt/inicio</loc>
+    <lastmod>2026-05-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 3. Sobre Mim -->
+  <url>
+    <loc>https://ayresdaioneto.pt/sobre</loc>
+    <lastmod>2026-05-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- 4. Competências Técnicas (Skills) -->
+  <url>
+    <loc>https://ayresdaioneto.pt/competencias</loc>
+    <lastmod>2026-05-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- 5. Galeria de Projetos -->
+  <url>
+    <loc>https://ayresdaioneto.pt/projetos</loc>
+    <lastmod>2026-05-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- 6. Experiência Profissional -->
+  <url>
+    <loc>https://ayresdaioneto.pt/experiencia</loc>
+    <lastmod>2026-05-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- 7. Formação Académica e Educação -->
+  <url>
+    <loc>https://ayresdaioneto.pt/educacao</loc>
+    <lastmod>2026-05-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- 8. Formulário de Contacto -->
+  <url>
+    <loc>https://ayresdaioneto.pt/contacto</loc>
+    <lastmod>2026-05-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- 9. Políticas de Privacidade (Requisito SEO / Legal) -->
+  <url>
+    <loc>https://ayresdaioneto.pt/politicas-de-privacidade</loc>
+    <lastmod>2026-05-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <!-- 10. Termos de Uso (Requisito SEO / Legal) -->
+  <url>
+    <loc>https://ayresdaioneto.pt/termos-de-uso</loc>
+    <lastmod>2026-05-31</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+</urlset>

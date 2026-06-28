@@ -1,0 +1,25 @@
+<?php
+/**
+ * =====================================================================
+ * MODELO DE CONFIGURAÇÃO SMTP DO BREVO (brevo_config.php.example)
+ * =====================================================================
+ * INSTRUÇÕES:
+ * 1. Duplique este ficheiro e renomeie-o para "brevo_config.php"
+ *    na mesma diretoria (backend/includes/).
+ * 2. Preencha a chave SMTP ativa do seu painel do Brevo.
+ * 3. O ficheiro real "brevo_config.php" está incluído no .gitignore
+ *    e nunca será enviado para o GitHub, protegendo a sua chave.
+ * =====================================================================
+ */
+
+// --- Configurações SMTP Transacional (Brevo) ---
+define('SMTP_HOST', 'smtp-relay.brevo.com');      // Servidor de retransmissão de SMTP do Brevo
+define('SMTP_PORT', 587);                         // Porta padrão de envio (normalmente 587)
+define('SMTP_USER', 'seu_utilizador_smtp');       // O seu utilizador da conta Brevo (ex: 9fb086001@smtp-brevo.com)
+define('SMTP_PASS', 'SUA_CHAVE_API_SMTP_AQUI');   // A sua chave de SMTP ativa da Brevo (SIB)
+define('EMAIL_REMETENTE', 'seu_email@dominio.pt'); // O e-mail de envio autorizado no Brevo
+define('NOME_REMETENTE', 'Ayres Daio Neto');       // O nome que aparecerá como remetente
+
+// --- Definições de Marketing e Listas ---
+define('BREVO_LIST_ID', 2);                       // ID da lista da Newsletter no painel Brevo
+?>

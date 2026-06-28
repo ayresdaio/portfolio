@@ -1,0 +1,16 @@
+# =====================================================================
+# BLOQUEIO DE ACESSO DIRETO A FICHEIROS SENSÍVEIS (CREDENCIAIS)
+# =====================================================================
+
+# Impede que qualquer utilizador aceda aos ficheiros desta pasta
+# (config.php, db.php, brevo_config.php) via navegador Web.
+
+<IfModule mod_authz_core.c>
+    # Apache 2.4+
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    # Apache 2.2
+    Order Allow,Deny
+    Deny from all
+</IfModule>

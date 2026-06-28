@@ -1,0 +1,22 @@
+{
+  "name": "Ayres Daio Neto - Portfólio",
+  "short_name": "Ayres Portfólio",
+  "icons": [
+    {
+      "src": "/imag/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/imag/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "theme_color": "#09090b",
+  "background_color": "#000000",
+  "display": "standalone",
+  "start_url": "/inicio"
+}

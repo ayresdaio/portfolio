@@ -1,0 +1,18 @@
+# =====================================================================
+# DIRETIVAS DE RASTREIO E RASTREADORES - PORTFÓLIO AYRES DAIO NETO
+# =====================================================================
+# Este ficheiro instrui os motores de pesquisa (como Google, Bing, DuckDuckGo)
+# sobre quais as secções do site que podem ou não indexar.
+# Localizado sob o domínio: https://ayresdaioneto.pt/
+
+User-agent: *
+
+# Permitir a indexação de todo o conteúdo público do portfólio
+Allow: /
+
+# Bloquear o acesso de indexação ao painel administrativo e endpoints do backend por segurança
+Disallow: /admin/
+Disallow: /backend/
+
+# Fornecer o link absoluto do mapa do site para descoberta ultra rápida das páginas
+Sitemap: https://ayresdaioneto.pt/sitemap.xml

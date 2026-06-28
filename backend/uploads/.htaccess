@@ -1,0 +1,13 @@
+# Desativar a execução do PHP em ficheiros presentes nesta diretoria e subdiretorias
+php_flag engine off
+
+# Bloquear o acesso direto a ficheiros que não sejam recursos permitidos
+<FilesMatch "(?i)\.(php|php3|php4|php5|php7|php8|phtml|pl|py|jsp|asp|htm|html|shtml|sh|cgi|xml|json|sql|log)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Para garantir compatibilidade com mime types antigos caso algo passe
+Options -ExecCGI
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8
+RemoveType .php .phtml .php3 .php4 .php5 .php7 .php8
