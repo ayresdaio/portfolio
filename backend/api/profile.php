@@ -85,6 +85,42 @@ if ($requestMethod === 'POST') {
         return $mimeTypes[$ext] ?? 'application/octet-stream';
     };
 
+    // Helper para sanitizar o nome de ficheiro mantendo a estrutura original
+    $sanitizeFilename = function($filename) {
+        $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        $name = pathinfo($filename, PATHINFO_FILENAME);
+        
+        // Tabela de substituição de caracteres acentuados
+        $utf8 = array(
+            '/[áàâãäåæ]/u' => 'a',
+            '/[ÁÀÂÃÄÅÆ]/u' => 'A',
+            '/[éèêë]/u'    => 'e',
+            '/[ÉÈÊË]/u'    => 'E',
+            '/[íìîï]/u'    => 'i',
+            '/[ÍÌÎÏ]/u'    => 'I',
+            '/[óòôõöø]/u'  => 'o',
+            '/[ÓÒÔÕÖØ]/u'  => 'O',
+            '/[úùûü]/u'    => 'u',
+            '/[ÚÙÛÜ]/u'    => 'U',
+            '/[ç]/u'       => 'c',
+            '/[Ç]/u'       => 'C',
+            '/[ñ]/u'       => 'n',
+            '/[Ñ]/u'       => 'N'
+        );
+        $name = preg_replace(array_keys($utf8), array_values($utf8), $name);
+        
+        // Substituir espaços e caracteres não alfanuméricos por underscore
+        $name = preg_replace('/[^a-zA-Z0-9_-]/', '_', $name);
+        $name = preg_replace('/_+/', '_', $name);
+        $name = trim($name, '_');
+        
+        if (empty($name)) {
+            $name = 'curriculo_' . time();
+        }
+        
+        return $name . '.' . $ext;
+    };
+
     try {
         // Obter dados de formulário normais (multipart/form-data devido a uploads de ficheiro)
         $name = isset($_POST['name']) ? trim(strip_tags($_POST['name'])) : '';
@@ -118,18 +154,32 @@ if ($requestMethod === 'POST') {
         }
 
         // Buscar dados atuais do perfil para verificar fotos/CV existentes e obter o ID
-        $stmt = $db->query('SELECT id, avatar_url, cv_url, cv_url_en, about_image_url FROM profile LIMIT 1');
+        $stmt = $db->query('SELECT id, avatar_url, cv_url, cv_url_en, cv_url_tech, cv_url_tech_en, about_image_url FROM profile LIMIT 1');
         $currentProfile = $stmt->fetch();
         
         $avatar_url = $currentProfile ? $currentProfile['avatar_url'] : null;
         $cv_url = $currentProfile ? $currentProfile['cv_url'] : null;
         $cv_url_en = $currentProfile ? $currentProfile['cv_url_en'] : null;
+        $cv_url_tech = $currentProfile ? $currentProfile['cv_url_tech'] : null;
+        $cv_url_tech_en = $currentProfile ? $currentProfile['cv_url_tech_en'] : null;
         $about_image_url = $currentProfile ? $currentProfile['about_image_url'] : null;
 
         // -------------------------------------------------------------
         // PROCESSAMENTO DE UPLOAD DE AVATAR ($_FILES['avatar'])
         // -------------------------------------------------------------
-        if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
+        if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] !== UPLOAD_ERR_NO_FILE) {
+            if ($_FILES['avatar']['error'] !== UPLOAD_ERR_OK) {
+                $uploadErrors = [
+                    UPLOAD_ERR_INI_SIZE   => 'A foto de perfil excede o limite de tamanho configurado no servidor (upload_max_filesize).',
+                    UPLOAD_ERR_FORM_SIZE  => 'A foto de perfil excede o limite de tamanho definido no formulário HTML.',
+                    UPLOAD_ERR_PARTIAL    => 'O upload do ficheiro foi feito apenas parcialmente.',
+                    UPLOAD_ERR_NO_TMP_DIR => 'Falta a pasta temporária no servidor para uploads.',
+                    UPLOAD_ERR_CANT_WRITE => 'Falha ao escrever o ficheiro no disco do servidor.',
+                    UPLOAD_ERR_EXTENSION  => 'Uma extensão do PHP interrompeu o upload do ficheiro.'
+                ];
+                $errorMsg = $uploadErrors[$_FILES['avatar']['error']] ?? 'Erro desconhecido no upload.';
+                throw new \Exception("Erro na foto de perfil: " . $errorMsg);
+            }
             $avatarFile = $_FILES['avatar'];
             if ($avatarFile['size'] > 5 * 1024 * 1024) {
                 throw new \Exception('O tamanho da foto de perfil não deve exceder 5MB.');
@@ -179,7 +229,19 @@ if ($requestMethod === 'POST') {
         // -------------------------------------------------------------
         // PROCESSAMENTO DE UPLOAD DE CURRÍCULO CV ($_FILES['cv'])
         // -------------------------------------------------------------
-        if (isset($_FILES['cv']) && $_FILES['cv']['error'] === UPLOAD_ERR_OK) {
+        if (isset($_FILES['cv']) && $_FILES['cv']['error'] !== UPLOAD_ERR_NO_FILE) {
+            if ($_FILES['cv']['error'] !== UPLOAD_ERR_OK) {
+                $uploadErrors = [
+                    UPLOAD_ERR_INI_SIZE   => 'O currículo excede o limite de tamanho configurado no servidor (upload_max_filesize).',
+                    UPLOAD_ERR_FORM_SIZE  => 'O currículo excede o limite de tamanho definido no formulário HTML.',
+                    UPLOAD_ERR_PARTIAL    => 'O upload do ficheiro foi feito apenas parcialmente.',
+                    UPLOAD_ERR_NO_TMP_DIR => 'Falta a pasta temporária no servidor para uploads.',
+                    UPLOAD_ERR_CANT_WRITE => 'Falha ao escrever o ficheiro no disco do servidor.',
+                    UPLOAD_ERR_EXTENSION  => 'Uma extensão do PHP interrompeu o upload do ficheiro.'
+                ];
+                $errorMsg = $uploadErrors[$_FILES['cv']['error']] ?? 'Erro desconhecido no upload.';
+                throw new \Exception("Erro no currículo em português: " . $errorMsg);
+            }
             $cvFile = $_FILES['cv'];
             if ($cvFile['size'] > 10 * 1024 * 1024) {
                 throw new \Exception('O tamanho do currículo em PDF não deve exceder 10MB.');
@@ -189,8 +251,8 @@ if ($requestMethod === 'POST') {
             if ($mimeType !== 'application/pdf' && $ext !== 'pdf') {
                 throw new \Exception('Formato de documento inválido. Apenas PDF é permitido para o currículo.');
             }
-            $ext = 'pdf';
-            $newCvName = 'cv_' . bin2hex(random_bytes(8)) . '.' . $ext;
+            // Usa o nome original sanitizado para que o download traga o nome original do ficheiro
+            $newCvName = $sanitizeFilename($cvFile['name']);
             
             $uploadDir = dirname(__DIR__) . '/uploads/profile/';
             if (!is_dir($uploadDir)) {
@@ -217,7 +279,19 @@ if ($requestMethod === 'POST') {
         // -------------------------------------------------------------
         // PROCESSAMENTO DE UPLOAD DE CURRÍCULO CV EN ($_FILES['cv_en'])
         // -------------------------------------------------------------
-        if (isset($_FILES['cv_en']) && $_FILES['cv_en']['error'] === UPLOAD_ERR_OK) {
+        if (isset($_FILES['cv_en']) && $_FILES['cv_en']['error'] !== UPLOAD_ERR_NO_FILE) {
+            if ($_FILES['cv_en']['error'] !== UPLOAD_ERR_OK) {
+                $uploadErrors = [
+                    UPLOAD_ERR_INI_SIZE   => 'O currículo em inglês excede o limite de tamanho configurado no servidor (upload_max_filesize).',
+                    UPLOAD_ERR_FORM_SIZE  => 'O currículo em inglês excede o limite de tamanho definido no formulário HTML.',
+                    UPLOAD_ERR_PARTIAL    => 'O upload do ficheiro foi feito apenas parcialmente.',
+                    UPLOAD_ERR_NO_TMP_DIR => 'Falta a pasta temporária no servidor para uploads.',
+                    UPLOAD_ERR_CANT_WRITE => 'Falha ao escrever o ficheiro no disco do servidor.',
+                    UPLOAD_ERR_EXTENSION  => 'Uma extensão do PHP interrompeu o upload do ficheiro.'
+                ];
+                $errorMsg = $uploadErrors[$_FILES['cv_en']['error']] ?? 'Erro desconhecido no upload.';
+                throw new \Exception("Erro no currículo em inglês: " . $errorMsg);
+            }
             $cvEnFile = $_FILES['cv_en'];
             if ($cvEnFile['size'] > 10 * 1024 * 1024) {
                 throw new \Exception('O tamanho do currículo em inglês não deve exceder 10MB.');
@@ -227,8 +301,8 @@ if ($requestMethod === 'POST') {
             if ($mimeType !== 'application/pdf' && $ext !== 'pdf') {
                 throw new \Exception('Formato de documento inválido. Apenas PDF é permitido para o currículo em inglês.');
             }
-            $ext = 'pdf';
-            $newCvEnName = 'cv_en_' . bin2hex(random_bytes(8)) . '.' . $ext;
+            // Usa o nome original sanitizado para que o download traga o nome original do ficheiro
+            $newCvEnName = $sanitizeFilename($cvEnFile['name']);
             
             $uploadDir = dirname(__DIR__) . '/uploads/profile/';
             if (!is_dir($uploadDir)) {
@@ -253,9 +327,119 @@ if ($requestMethod === 'POST') {
         }
 
         // -------------------------------------------------------------
+        // PROCESSAMENTO DE UPLOAD DE CURRÍCULO CV TECH ($_FILES['cv_tech'])
+        // -------------------------------------------------------------
+        if (isset($_FILES['cv_tech']) && $_FILES['cv_tech']['error'] !== UPLOAD_ERR_NO_FILE) {
+            if ($_FILES['cv_tech']['error'] !== UPLOAD_ERR_OK) {
+                $uploadErrors = [
+                    UPLOAD_ERR_INI_SIZE   => 'O currículo técnico excede o limite de tamanho configurado no servidor (upload_max_filesize).',
+                    UPLOAD_ERR_FORM_SIZE  => 'O currículo técnico excede o limite de tamanho definido no formulário HTML.',
+                    UPLOAD_ERR_PARTIAL    => 'O upload do ficheiro foi feito apenas parcialmente.',
+                    UPLOAD_ERR_NO_TMP_DIR => 'Falta a pasta temporária no servidor para uploads.',
+                    UPLOAD_ERR_CANT_WRITE => 'Falha ao escrever o ficheiro no disco do servidor.',
+                    UPLOAD_ERR_EXTENSION  => 'Uma extensão do PHP interrompeu o upload do ficheiro.'
+                ];
+                $errorMsg = $uploadErrors[$_FILES['cv_tech']['error']] ?? 'Erro desconhecido no upload.';
+                throw new \Exception("Erro no currículo técnico em português: " . $errorMsg);
+            }
+            $cvTechFile = $_FILES['cv_tech'];
+            if ($cvTechFile['size'] > 10 * 1024 * 1024) {
+                throw new \Exception('O tamanho do currículo técnico em português não deve exceder 10MB.');
+            }
+            $mimeType = $getMimeType($cvTechFile['tmp_name']);
+            $ext = strtolower(pathinfo($cvTechFile['name'], PATHINFO_EXTENSION));
+            if ($mimeType !== 'application/pdf' && $ext !== 'pdf') {
+                throw new \Exception('Formato de documento inválido. Apenas PDF é permitido para o currículo técnico.');
+            }
+            $newCvTechName = $sanitizeFilename($cvTechFile['name']);
+            
+            $uploadDir = dirname(__DIR__) . '/uploads/profile/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+            $destPath = $uploadDir . $newCvTechName;
+
+            // Eliminar CV técnico antigo se existir e for local
+            if ($cv_url_tech && strpos($cv_url_tech, '/backend/uploads/') === 0) {
+                $oldPath = dirname(__DIR__) . str_replace('/backend', '', $cv_url_tech);
+                if (file_exists($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+
+            if (!$moveFunc($cvTechFile['tmp_name'], $destPath)) {
+                throw new \Exception('Falha ao guardar o currículo técnico no servidor.');
+            }
+            $cv_url_tech = '/backend/uploads/profile/' . $newCvTechName;
+        } elseif (isset($_POST['cv_url_tech'])) {
+            $cv_url_tech = trim($_POST['cv_url_tech']);
+        }
+
+        // -------------------------------------------------------------
+        // PROCESSAMENTO DE UPLOAD DE CURRÍCULO CV TECH EN ($_FILES['cv_tech_en'])
+        // -------------------------------------------------------------
+        if (isset($_FILES['cv_tech_en']) && $_FILES['cv_tech_en']['error'] !== UPLOAD_ERR_NO_FILE) {
+            if ($_FILES['cv_tech_en']['error'] !== UPLOAD_ERR_OK) {
+                $uploadErrors = [
+                    UPLOAD_ERR_INI_SIZE   => 'O currículo técnico em inglês excede o limite de tamanho configurado no servidor (upload_max_filesize).',
+                    UPLOAD_ERR_FORM_SIZE  => 'O currículo técnico em inglês excede o limite de tamanho definido no formulário HTML.',
+                    UPLOAD_ERR_PARTIAL    => 'O upload do ficheiro foi feito apenas parcialmente.',
+                    UPLOAD_ERR_NO_TMP_DIR => 'Falta a pasta temporária no servidor para uploads.',
+                    UPLOAD_ERR_CANT_WRITE => 'Falha ao escrever o ficheiro no disco do servidor.',
+                    UPLOAD_ERR_EXTENSION  => 'Uma extensão do PHP interrompeu o upload do ficheiro.'
+                ];
+                $errorMsg = $uploadErrors[$_FILES['cv_tech_en']['error']] ?? 'Erro desconhecido no upload.';
+                throw new \Exception("Erro no currículo técnico em inglês: " . $errorMsg);
+            }
+            $cvTechEnFile = $_FILES['cv_tech_en'];
+            if ($cvTechEnFile['size'] > 10 * 1024 * 1024) {
+                throw new \Exception('O tamanho do currículo técnico em inglês não deve exceder 10MB.');
+            }
+            $mimeType = $getMimeType($cvTechEnFile['tmp_name']);
+            $ext = strtolower(pathinfo($cvTechEnFile['name'], PATHINFO_EXTENSION));
+            if ($mimeType !== 'application/pdf' && $ext !== 'pdf') {
+                throw new \Exception('Formato de documento inválido. Apenas PDF é permitido para o currículo técnico em inglês.');
+            }
+            $newCvTechEnName = $sanitizeFilename($cvTechEnFile['name']);
+            
+            $uploadDir = dirname(__DIR__) . '/uploads/profile/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+            $destPath = $uploadDir . $newCvTechEnName;
+
+            // Eliminar CV técnico antigo se existir e for local
+            if ($cv_url_tech_en && strpos($cv_url_tech_en, '/backend/uploads/') === 0) {
+                $oldPath = dirname(__DIR__) . str_replace('/backend', '', $cv_url_tech_en);
+                if (file_exists($oldPath)) {
+                    @unlink($oldPath);
+                }
+            }
+
+            if (!$moveFunc($cvTechEnFile['tmp_name'], $destPath)) {
+                throw new \Exception('Falha ao guardar o currículo técnico em inglês no servidor.');
+            }
+            $cv_url_tech_en = '/backend/uploads/profile/' . $newCvTechEnName;
+        } elseif (isset($_POST['cv_url_tech_en'])) {
+            $cv_url_tech_en = trim($_POST['cv_url_tech_en']);
+        }
+
+        // -------------------------------------------------------------
         // PROCESSAMENTO DE UPLOAD DE IMAGEM "SOBRE MIM" ($_FILES['about_image'])
         // -------------------------------------------------------------
-        if (isset($_FILES['about_image']) && $_FILES['about_image']['error'] === UPLOAD_ERR_OK) {
+        if (isset($_FILES['about_image']) && $_FILES['about_image']['error'] !== UPLOAD_ERR_NO_FILE) {
+            if ($_FILES['about_image']['error'] !== UPLOAD_ERR_OK) {
+                $uploadErrors = [
+                    UPLOAD_ERR_INI_SIZE   => 'A imagem do Sobre Mim excede o limite de tamanho configurado no servidor (upload_max_filesize).',
+                    UPLOAD_ERR_FORM_SIZE  => 'A imagem do Sobre Mim excede o limite de tamanho definido no formulário HTML.',
+                    UPLOAD_ERR_PARTIAL    => 'O upload do ficheiro foi feito apenas parcialmente.',
+                    UPLOAD_ERR_NO_TMP_DIR => 'Falta a pasta temporária no servidor para uploads.',
+                    UPLOAD_ERR_CANT_WRITE => 'Falha ao escrever o ficheiro no disco do servidor.',
+                    UPLOAD_ERR_EXTENSION  => 'Uma extensão do PHP interrompeu o upload do ficheiro.'
+                ];
+                $errorMsg = $uploadErrors[$_FILES['about_image']['error']] ?? 'Erro desconhecido no upload.';
+                throw new \Exception("Erro na imagem do Sobre Mim: " . $errorMsg);
+            }
             $aboutImgFile = $_FILES['about_image'];
             if ($aboutImgFile['size'] > 5 * 1024 * 1024) {
                 throw new \Exception('O tamanho da foto Sobre Mim não deve exceder 5MB.');
@@ -306,7 +490,7 @@ if ($requestMethod === 'POST') {
         // -------------------------------------------------------------
         if ($currentProfile) {
             // Atualizar perfil existente
-            $updateStmt = $db->prepare('UPDATE profile SET name = :name, role = :role, role_en = :role_en, bio = :bio, bio_en = :bio_en, email = :email, phone = :phone, location = :location, location_en = :location_en, github_url = :github_url, linkedin_url = :linkedin_url, facebook_url = :facebook_url, instagram_url = :instagram_url, avatar_url = :avatar_url, cv_url = :cv_url, cv_url_en = :cv_url_en, about_text = :about_text, about_text_en = :about_text_en, about_image_url = :about_image_url WHERE id = :id');
+            $updateStmt = $db->prepare('UPDATE profile SET name = :name, role = :role, role_en = :role_en, bio = :bio, bio_en = :bio_en, email = :email, phone = :phone, location = :location, location_en = :location_en, github_url = :github_url, linkedin_url = :linkedin_url, facebook_url = :facebook_url, instagram_url = :instagram_url, avatar_url = :avatar_url, cv_url = :cv_url, cv_url_en = :cv_url_en, cv_url_tech = :cv_url_tech, cv_url_tech_en = :cv_url_tech_en, about_text = :about_text, about_text_en = :about_text_en, about_image_url = :about_image_url WHERE id = :id');
             $updateStmt->execute([
                 ':name' => $name,
                 ':role' => $role,
@@ -324,6 +508,8 @@ if ($requestMethod === 'POST') {
                 ':avatar_url' => $avatar_url,
                 ':cv_url' => $cv_url,
                 ':cv_url_en' => $cv_url_en,
+                ':cv_url_tech' => $cv_url_tech,
+                ':cv_url_tech_en' => $cv_url_tech_en,
                 ':about_text' => $about_text,
                 ':about_text_en' => $about_text_en,
                 ':about_image_url' => $about_image_url,
@@ -331,7 +517,7 @@ if ($requestMethod === 'POST') {
             ]);
         } else {
             // Criar se não existir por alguma razão
-            $insertStmt = $db->prepare('INSERT INTO profile (name, role, role_en, bio, bio_en, email, phone, location, location_en, github_url, linkedin_url, facebook_url, instagram_url, avatar_url, cv_url, cv_url_en, about_text, about_text_en, about_image_url) VALUES (:name, :role, :role_en, :bio, :bio_en, :email, :phone, :location, :location_en, :github_url, :linkedin_url, :facebook_url, :instagram_url, :avatar_url, :cv_url, :cv_url_en, :about_text, :about_text_en, :about_image_url)');
+            $insertStmt = $db->prepare('INSERT INTO profile (name, role, role_en, bio, bio_en, email, phone, location, location_en, github_url, linkedin_url, facebook_url, instagram_url, avatar_url, cv_url, cv_url_en, cv_url_tech, cv_url_tech_en, about_text, about_text_en, about_image_url) VALUES (:name, :role, :role_en, :bio, :bio_en, :email, :phone, :location, :location_en, :github_url, :linkedin_url, :facebook_url, :instagram_url, :avatar_url, :cv_url, :cv_url_en, :cv_url_tech, :cv_url_tech_en, :about_text, :about_text_en, :about_image_url)');
             $insertStmt->execute([
                 ':name' => $name,
                 ':role' => $role,
@@ -349,6 +535,8 @@ if ($requestMethod === 'POST') {
                 ':avatar_url' => $avatar_url,
                 ':cv_url' => $cv_url,
                 ':cv_url_en' => $cv_url_en,
+                ':cv_url_tech' => $cv_url_tech,
+                ':cv_url_tech_en' => $cv_url_tech_en,
                 ':about_text' => $about_text,
                 ':about_text_en' => $about_text_en,
                 ':about_image_url' => $about_image_url
@@ -361,6 +549,8 @@ if ($requestMethod === 'POST') {
             'avatar_url' => $avatar_url,
             'cv_url' => $cv_url,
             'cv_url_en' => $cv_url_en,
+            'cv_url_tech' => $cv_url_tech,
+            'cv_url_tech_en' => $cv_url_tech_en,
             'about_image_url' => $about_image_url
         ], JSON_UNESCAPED_UNICODE);
         exit;

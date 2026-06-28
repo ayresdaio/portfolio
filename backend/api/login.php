@@ -58,7 +58,7 @@ function getIpLocation($ip) {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_TIMEOUT, 2); // 2 segundos de timeout
     $response = curl_exec($ch);
-    curl_close($ch);
+    // curl_close($ch); // Removido: Depreciado no PHP >= 8.0, evita corromper resposta JSON
     
     if ($response) {
         $data = json_decode($response, true);

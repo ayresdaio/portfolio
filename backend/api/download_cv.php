@@ -19,22 +19,42 @@ use Includes\Database;
 try {
     $db = Database::getConnection();
     
-    // Obter o idioma solicitado
+    // Obter o idioma solicitado e o tipo de currículo (fullstack ou tech)
     $lang = isset($_GET['lang']) ? trim(strtolower($_GET['lang'])) : 'pt';
-    $column = ($lang === 'en') ? 'cv_url_en' : 'cv_url';
+    $type = isset($_GET['type']) ? trim(strtolower($_GET['type'])) : 'fullstack';
     
     // Procurar os links dos currículos no perfil
-    $stmt = $db->query('SELECT cv_url, cv_url_en FROM profile LIMIT 1');
+    $stmt = $db->query('SELECT cv_url, cv_url_en, cv_url_tech, cv_url_tech_en FROM profile LIMIT 1');
     $profile = $stmt->fetch();
     
-    if (!$profile || (empty($profile['cv_url']) && empty($profile['cv_url_en']))) {
-        header('HTTP/1.1 404 Not Found');
-        exit('Nenhum currículo configurado no portfólio.');
-    }
-    
-    // Fallback para português se o inglês não estiver disponível
-    if ($column === 'cv_url_en' && empty($profile['cv_url_en'])) {
-        $column = 'cv_url';
+    if ($type === 'tech') {
+        $column = ($lang === 'en') ? 'cv_url_tech_en' : 'cv_url_tech';
+        
+        if (!$profile || (empty($profile['cv_url_tech']) && empty($profile['cv_url_tech_en']))) {
+            header('HTTP/1.1 404 Not Found');
+            exit('Nenhum currículo técnico configurado no portfólio.');
+        }
+        
+        // Fallback para português se o inglês não estiver disponível
+        if ($column === 'cv_url_tech_en' && empty($profile['cv_url_tech_en'])) {
+            $column = 'cv_url_tech';
+        }
+        
+        $filename = ($column === 'cv_url_tech_en') ? "Technical_Resume_Ayres_Daio_Neto.pdf" : "Curriculo_Tecnico_Ayres_Daio_Neto.pdf";
+    } else {
+        $column = ($lang === 'en') ? 'cv_url_en' : 'cv_url';
+        
+        if (!$profile || (empty($profile['cv_url']) && empty($profile['cv_url_en']))) {
+            header('HTTP/1.1 404 Not Found');
+            exit('Nenhum currículo configurado no portfólio.');
+        }
+        
+        // Fallback para português se o inglês não estiver disponível
+        if ($column === 'cv_url_en' && empty($profile['cv_url_en'])) {
+            $column = 'cv_url';
+        }
+        
+        $filename = ($column === 'cv_url_en') ? "Resume_Ayres_Daio_Neto.pdf" : "Curriculo_Ayres_Daio_Neto.pdf";
     }
     
     $cvUrl = $profile[$column]; // Ex: /backend/uploads/profile/cv_2998986b9035b2c1.pdf
@@ -49,7 +69,6 @@ try {
     }
     
     // Enviar cabeçalhos HTTP de transferência de ficheiro para renomeação forçada
-    $filename = ($column === 'cv_url_en') ? "Resume_Ayres_Daio_Neto.pdf" : "Curriculo_Ayres_Daio_Neto.pdf";
     header('Content-Description: File Transfer');
     header('Content-Type: application/pdf');
     header('Content-Disposition: attachment; filename="' . $filename . '"');

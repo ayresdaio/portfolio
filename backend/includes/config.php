@@ -25,7 +25,7 @@ if ($is_production) {
     @error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED);
 } else {
     @ini_set('display_errors', 1);
-    @error_reporting(E_ALL);
+    @error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED); // Silenciar avisos que corrompem JSON
 }
 
 // 4. Configurações de cookies de sessão seguros

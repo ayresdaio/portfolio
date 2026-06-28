@@ -5,6 +5,8 @@ import {
   Linkedin, 
   Mail, 
   ChevronRight, 
+  ChevronLeft,
+  X,
   User, 
   Briefcase, 
   MapPin, 
@@ -35,6 +37,8 @@ interface Profile {
   avatar_url?: string;
   cv_url?: string;
   cv_url_en?: string;
+  cv_url_tech?: string;
+  cv_url_tech_en?: string;
   about_text?: string;
   about_image_url?: string;
 }
@@ -90,14 +94,24 @@ function stripHtmlAndDecode(html: string): string {
 export default function HomePage() {
   const { language, t } = useLanguage();
   // Aceder aos dados centrais partilhados pelo Layout público (evitando fetchs paralelos)
-  const { profile, projects } = useOutletContext<{ profile: Profile | null; projects: Project[] }>();
+  const { profile, projects, about_images } = useOutletContext<{ 
+    profile: Profile | null; 
+    projects: Project[];
+    about_images?: { id: number; image_url: string; caption?: string; sort_order: number }[];
+  }>();
   const [activeCodeTab, setActiveCodeTab] = useState<'tsx' | 'sh' | 'sql'>('tsx');
   
   // Estado para controlar qual o projeto que está a ser detalhado no modal premium
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   
-  // Estado para controlar se o modal premium de pré-visualização do currículo está aberto
-  const [isCvModalOpen, setIsCvModalOpen] = useState(false);
+  // Estado para controlar qual o currículo que está a ser visualizado no modal
+  const [cvUrlToPreview, setCvUrlToPreview] = useState<string | null>(null);
+  const [cvTitleToPreview, setCvTitleToPreview] = useState('');
+
+  // Estados para o carrossel de fotos "Sobre Mim" e o Lightbox respetivo
+  const [activeAboutImageIndex, setActiveAboutImageIndex] = useState(0);
+  const [lightboxAboutOpen, setLightboxAboutOpen] = useState(false);
+  const [lightboxAboutImageIndex, setLightboxAboutImageIndex] = useState(0);
 
   // Se os dados essenciais do perfil ainda estiverem a carregar, exibe o spinner
   if (!profile) {
@@ -156,11 +170,27 @@ export default function HomePage() {
 
             {profile.cv_url && (
               <button 
-                onClick={() => setIsCvModalOpen(true)}
+                onClick={() => {
+                  setCvUrlToPreview(profile.cv_url || null);
+                  setCvTitleToPreview(language === 'pt' ? 'Currículo Full Stack Developer' : 'Full Stack Developer Resume');
+                }}
                 className="px-6 py-3 bg-zinc-900/40 border border-white/5 hover:border-indigo-500/30 text-textPrimary hover:text-white backdrop-blur-md rounded-xl transition-all duration-300 hover:-translate-y-0.5 flex items-center space-x-2"
               >
                 <Eye size={18} />
-                <span>{language === 'pt' ? 'Visualizar Currículo' : 'View Resume'}</span>
+                <span>{language === 'pt' ? 'CV Full Stack' : 'Full Stack CV'}</span>
+              </button>
+            )}
+
+            {profile.cv_url_tech && (
+              <button 
+                onClick={() => {
+                  setCvUrlToPreview(profile.cv_url_tech || null);
+                  setCvTitleToPreview(language === 'pt' ? 'Currículo Técnico' : 'Technical Resume');
+                }}
+                className="px-6 py-3 bg-zinc-900/40 border border-white/5 hover:border-indigo-500/30 text-textPrimary hover:text-white backdrop-blur-md rounded-xl transition-all duration-300 hover:-translate-y-0.5 flex items-center space-x-2"
+              >
+                <Eye size={18} />
+                <span>{language === 'pt' ? 'CV Técnico' : 'Technical CV'}</span>
               </button>
             )}
           </div>
@@ -222,15 +252,78 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto relative z-10">
           <div className="grid md:grid-cols-12 gap-12 items-center">
             
-            {/* Foto Retrato sobreposta */}
+            {/* Foto Retrato sobreposta / Galeria de Imagens do Sobre Mim */}
             <div className="md:col-span-5 flex justify-center">
               <div className="relative group max-w-sm w-full">
                 <div className="absolute -inset-1.5 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-2xl blur opacity-20 group-hover:opacity-35 transition duration-1000"></div>
-                <div className="relative glass-panel p-3 overflow-hidden rounded-2xl bg-darkSurface/40 border border-darkBorder">
-                  {/* Fundo do retrato alterado de bg-black para bg-darkSurface para suportar fundo claro no Modo Claro */}
+                <div className="relative glass-panel p-3 overflow-hidden rounded-2xl bg-darkSurface/40 border border-darkBorder group/carousel">
                   <div className="aspect-square w-full rounded-xl overflow-hidden bg-darkSurface border border-darkBorder relative">
-                    {profile.about_image_url || profile.avatar_url ? (
-                       <img 
+                    {about_images && about_images.length > 0 ? (
+                      <>
+                        <div 
+                          className="w-full h-full relative cursor-pointer"
+                          onClick={() => {
+                            setLightboxAboutImageIndex(activeAboutImageIndex);
+                            setLightboxAboutOpen(true);
+                          }}
+                        >
+                          <img 
+                            src={about_images[activeAboutImageIndex].image_url} 
+                            alt={about_images[activeAboutImageIndex].caption || "Sobre mim"} 
+                            className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                          />
+                          
+                          {/* Legenda PT/EN em overlay */}
+                          {about_images[activeAboutImageIndex].caption && (
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-md px-4 py-2.5 border-t border-darkBorder/30 text-xs text-textSecondary font-semibold select-none text-center">
+                              {about_images[activeAboutImageIndex].caption}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Setas de Controlo de Carousel (Apenas se houver mais de 1 foto) */}
+                        {about_images.length > 1 && (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveAboutImageIndex(prev => (prev - 1 + about_images.length) % about_images.length);
+                              }}
+                              className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-darkSurface/90 border border-darkBorder/60 text-textSecondary hover:text-cyan-400 hover:scale-105 transition-all opacity-0 group-hover/carousel:opacity-100 duration-300 z-20 cursor-pointer"
+                              title="Anterior"
+                            >
+                              <ChevronLeft size={16} />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveAboutImageIndex(prev => (prev + 1) % about_images.length);
+                              }}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-darkSurface/90 border border-darkBorder/60 text-textSecondary hover:text-cyan-400 hover:scale-105 transition-all opacity-0 group-hover/carousel:opacity-100 duration-300 z-20 cursor-pointer"
+                              title="Seguinte"
+                            >
+                              <ChevronRight size={16} />
+                            </button>
+
+                            {/* Pontos Indicadores (Dots) */}
+                            <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex items-center space-x-1.5 z-20">
+                              {about_images.map((_, idx) => (
+                                <button
+                                  key={idx}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveAboutImageIndex(idx);
+                                  }}
+                                  className={`w-1.5 h-1.5 rounded-full transition-all duration-300 cursor-pointer ${idx === activeAboutImageIndex ? 'bg-cyan-400 w-3' : 'bg-white/30 hover:bg-white/50'}`}
+                                  aria-label={`Slide ${idx + 1}`}
+                                />
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </>
+                    ) : profile.about_image_url || profile.avatar_url ? (
+                      <img 
                         src={profile.about_image_url || profile.avatar_url} 
                         alt="Sobre mim" 
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -551,12 +644,78 @@ export default function HomePage() {
         />
       )}
 
-      {/* Renderização do Modal Premium de Pré-visualização do Currículo */}
-      {isCvModalOpen && profile.cv_url && (
+      {/* Renderização do Modal Premium de Pré-visualização do Currículo selecionado */}
+      {cvUrlToPreview && (
         <CVPreviewModal 
-          cvUrl={profile.cv_url} 
-          onClose={() => setIsCvModalOpen(false)} 
+          cvUrl={cvUrlToPreview} 
+          title={cvTitleToPreview}
+          onClose={() => {
+            setCvUrlToPreview(null);
+            setCvTitleToPreview('');
+          }} 
         />
+      )}
+
+      {/* Lightbox da Galeria de Fotos do Sobre Mim */}
+      {lightboxAboutOpen && about_images && about_images.length > 0 && (
+        <div 
+          className="fixed inset-0 z-[10000] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setLightboxAboutOpen(false)}
+        >
+          {/* Botão Fechar */}
+          <button 
+            onClick={() => setLightboxAboutOpen(false)}
+            className="absolute top-5 right-5 z-[10010] p-2.5 bg-darkBg/60 hover:bg-darkSurface border border-darkBorder text-textSecondary hover:text-textPrimary rounded-full transition-all duration-300 hover:rotate-90 active:scale-95 cursor-pointer"
+            aria-label="Fechar Lightbox"
+          >
+            <X size={18} />
+          </button>
+
+          {/* Seta Esquerda */}
+          {about_images.length > 1 && (
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxAboutImageIndex(prev => (prev - 1 + about_images.length) % about_images.length);
+              }}
+              className="absolute left-4 p-3 rounded-xl bg-darkSurface/60 border border-darkBorder text-textSecondary hover:text-cyan-400 hover:scale-105 transition-all z-[10010] cursor-pointer"
+              title="Anterior"
+            >
+              <ChevronLeft size={20} />
+            </button>
+          )}
+
+          {/* Imagem Central */}
+          <div 
+            className="relative max-w-4xl max-h-[80vh] flex flex-col items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img 
+              src={about_images[lightboxAboutImageIndex].image_url} 
+              alt={about_images[lightboxAboutImageIndex].caption || ''} 
+              className="max-w-full max-h-[70vh] object-contain rounded-2xl border border-darkBorder/40 shadow-2xl select-none"
+            />
+            {about_images[lightboxAboutImageIndex].caption && (
+              <p className="mt-4 text-sm text-textPrimary bg-darkSurface/90 border border-darkBorder/60 px-5 py-2.5 rounded-2xl text-center font-semibold max-w-lg shadow-xl">
+                {about_images[lightboxAboutImageIndex].caption}
+              </p>
+            )}
+          </div>
+
+          {/* Seta Direita */}
+          {about_images.length > 1 && (
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxAboutImageIndex(prev => (prev + 1) % about_images.length);
+              }}
+              className="absolute right-4 p-3 rounded-xl bg-darkSurface/60 border border-darkBorder text-textSecondary hover:text-cyan-400 hover:scale-105 transition-all z-[10010] cursor-pointer"
+              title="Seguinte"
+            >
+              <ChevronRight size={20} />
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

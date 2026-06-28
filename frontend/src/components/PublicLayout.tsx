@@ -20,6 +20,8 @@ interface Profile {
   avatar_url?: string;
   cv_url?: string;
   cv_url_en?: string;
+  cv_url_tech?: string;
+  cv_url_tech_en?: string;
   about_text?: string;
   about_image_url?: string;
 }

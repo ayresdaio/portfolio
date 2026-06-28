@@ -71,6 +71,8 @@ interface Profile {
   avatar_url?: string;
   cv_url?: string;
   cv_url_en?: string;
+  cv_url_tech?: string;
+  cv_url_tech_en?: string;
   about_text?: string;
   about_text_en?: string;
   about_image_url?: string;
@@ -332,7 +334,7 @@ export default function AdminDashboardPage() {
 
   // Estados para a Galeria de Fotos do Sobre Mim
   const [aboutImages, setAboutImages] = useState<AboutImage[]>([]);
-  const [aboutImageFile, setAboutImageFile] = useState<File | null>(null);
+  const [aboutImageFiles, setAboutImageFiles] = useState<File[]>([]);
   const [aboutImageCaption, setAboutImageCaption] = useState('');
   const [aboutImageCaptionEn, setAboutImageCaptionEn] = useState('');
   const [aboutImageSort, setAboutImageSort] = useState(0);
@@ -480,12 +482,16 @@ export default function AdminDashboardPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [cvEnFile, setCvEnFile] = useState<File | null>(null);
+  const [cvTechFile, setCvTechFile] = useState<File | null>(null);
+  const [cvTechEnFile, setCvTechEnFile] = useState<File | null>(null);
   const [aboutImgFile, setAboutImgFile] = useState<File | null>(null);
 
   // Referências programáticas para uploads táteis seguros e compatíveis em telemóveis
   const avatarInputRef = React.useRef<HTMLInputElement>(null);
   const cvInputRef = React.useRef<HTMLInputElement>(null);
   const cvEnInputRef = React.useRef<HTMLInputElement>(null);
+  const cvTechInputRef = React.useRef<HTMLInputElement>(null);
+  const cvTechEnInputRef = React.useRef<HTMLInputElement>(null);
   const aboutImgInputRef = React.useRef<HTMLInputElement>(null);
   const projImageInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -837,6 +843,18 @@ export default function AdminDashboardPage() {
         formData.append('cv_url_en', profile.cv_url_en || '');
       }
 
+      if (cvTechFile) {
+        formData.append('cv_tech', cvTechFile);
+      } else {
+        formData.append('cv_url_tech', profile.cv_url_tech || '');
+      }
+
+      if (cvTechEnFile) {
+        formData.append('cv_tech_en', cvTechEnFile);
+      } else {
+        formData.append('cv_url_tech_en', profile.cv_url_tech_en || '');
+      }
+
       if (aboutImgFile) {
         formData.append('about_image', aboutImgFile);
       } else {
@@ -857,12 +875,16 @@ export default function AdminDashboardPage() {
             avatar_url: data.avatar_url || prev.avatar_url,
             cv_url: data.cv_url || prev.cv_url,
             cv_url_en: data.cv_url_en || prev.cv_url_en,
+            cv_url_tech: data.cv_url_tech || prev.cv_url_tech,
+            cv_url_tech_en: data.cv_url_tech_en || prev.cv_url_tech_en,
             about_image_url: data.about_image_url || prev.about_image_url
           }));
           // Limpar ficheiros carregados de forma reativa
           setAvatarFile(null);
           setCvFile(null);
           setCvEnFile(null);
+          setCvTechFile(null);
+          setCvTechEnFile(null);
           setAboutImgFile(null);
       } else {
         triggerAlert('error', data.message || 'Erro ao atualizar perfil.');
@@ -1588,31 +1610,83 @@ export default function AdminDashboardPage() {
     setLoading(true);
 
     try {
-      const formData = new FormData();
       if (editingAboutImageId) {
+        // Modo Edição: Apenas um ficheiro de imagem é atualizado
+        const formData = new FormData();
         formData.append('id', editingAboutImageId.toString());
-      }
-      formData.append('caption', aboutImageCaption);
-      formData.append('caption_en', aboutImageCaptionEn);
-      formData.append('sort_order', aboutImageSort.toString());
+        formData.append('caption', aboutImageCaption);
+        formData.append('caption_en', aboutImageCaptionEn);
+        formData.append('sort_order', aboutImageSort.toString());
 
-      if (aboutImageFile) {
-        formData.append('image', aboutImageFile);
-      }
+        if (aboutImageFiles.length > 0) {
+          formData.append('image', aboutImageFiles[0]);
+        }
 
-      const res = await fetch('/backend/api/about_images', {
-        method: 'POST',
-        body: formData
-      });
+        const res = await fetch('/backend/api/about_images', {
+          method: 'POST',
+          body: formData
+        });
 
-      const data = await res.json();
-      if (data.success) {
-        triggerAlert('success', data.message);
-        setShowAboutImageForm(false);
-        resetAboutImageForm();
-        loadAboutImages();
+        const data = await res.json();
+        if (data.success) {
+          triggerAlert('success', data.message);
+          setShowAboutImageForm(false);
+          resetAboutImageForm();
+          loadAboutImages();
+        } else {
+          triggerAlert('error', data.message || 'Erro ao guardar imagem.');
+        }
       } else {
-        triggerAlert('error', data.message || 'Erro ao guardar imagem.');
+        // Modo Criação: Suporta upload em lote de uma ou múltiplas imagens
+        if (aboutImageFiles.length === 0) {
+          triggerAlert('error', 'Por favor, selecione pelo menos uma imagem.');
+          setLoading(false);
+          return;
+        }
+
+        let successCount = 0;
+        let lastError = '';
+
+        for (let i = 0; i < aboutImageFiles.length; i++) {
+          const file = aboutImageFiles[i];
+          const formData = new FormData();
+          
+          // Anexar sufixo de identificação numérica se for carregado mais do que 1 ficheiro
+          const captionSuffix = aboutImageFiles.length > 1 && aboutImageCaption ? ` (${i + 1})` : '';
+          const captionEnSuffix = aboutImageFiles.length > 1 && aboutImageCaptionEn ? ` (${i + 1})` : '';
+          
+          formData.append('caption', aboutImageCaption ? aboutImageCaption + captionSuffix : '');
+          formData.append('caption_en', aboutImageCaptionEn ? aboutImageCaptionEn + captionEnSuffix : '');
+          // Atribuir sort_order sequencial automático
+          formData.append('sort_order', (aboutImageSort + i).toString());
+          formData.append('image', file);
+
+          const res = await fetch('/backend/api/about_images', {
+            method: 'POST',
+            body: formData
+          });
+
+          const data = await res.json();
+          if (data.success) {
+            successCount++;
+          } else {
+            lastError = data.message || 'Erro ao enviar imagem.';
+          }
+        }
+
+        if (successCount === aboutImageFiles.length) {
+          triggerAlert('success', `${successCount} imagem(ns) adicionada(s) com sucesso à galeria!`);
+          setShowAboutImageForm(false);
+          resetAboutImageForm();
+          loadAboutImages();
+        } else if (successCount > 0) {
+          triggerAlert('error', `Foram carregadas apenas ${successCount} de ${aboutImageFiles.length} imagens. Último erro: ${lastError}`);
+          setShowAboutImageForm(false);
+          resetAboutImageForm();
+          loadAboutImages();
+        } else {
+          triggerAlert('error', `Erro ao efetuar o upload em lote: ${lastError}`);
+        }
       }
     } catch (err) {
       triggerAlert('error', 'Falha técnica ao tentar guardar a imagem.');
@@ -1626,7 +1700,7 @@ export default function AdminDashboardPage() {
     setAboutImageCaption('');
     setAboutImageCaptionEn('');
     setAboutImageSort(0);
-    setAboutImageFile(null);
+    setAboutImageFiles([]);
   };
 
   const handleAboutImageDelete = (id: number) => {
@@ -2094,6 +2168,74 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Upload Currículo Técnico PDF (Português) */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-textSecondary block">Currículo Técnico em Português (PDF)</label>
+                <div className="flex items-center space-x-4 bg-darkBg/60 border border-darkBorder p-4 rounded-2xl">
+                  <div className="w-16 h-16 rounded-xl bg-brandBlue/10 flex items-center justify-center text-brandBlue shrink-0 border border-brandBlue/20">
+                    <FileText size={24} />
+                  </div>
+                  <div className="flex-grow space-y-2 min-w-0">
+                    <input 
+                      type="file"
+                      accept=".pdf"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setCvTechFile(e.target.files[0]);
+                        }
+                      }}
+                      className="hidden"
+                      ref={cvTechInputRef}
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => cvTechInputRef.current?.click()}
+                      className="px-4 py-2 bg-darkSurface border border-darkBorder hover:border-brandBlue/45 text-textSecondary hover:text-textPrimary rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center justify-center space-x-1.5 w-fit"
+                    >
+                      <Upload size={12} />
+                      <span>Selecionar PDF</span>
+                    </button>
+                    <p className="text-[10px] text-textSecondary truncate">
+                      {cvTechFile ? `Ficheiro: ${cvTechFile.name}` : profile.cv_url_tech ? `Caminho: ${profile.cv_url_tech}` : 'Nenhum currículo técnico em português.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Upload Currículo Técnico PDF (Inglês) */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-textSecondary block">Currículo Técnico em Inglês / Resume (PDF)</label>
+                <div className="flex items-center space-x-4 bg-darkBg/60 border border-darkBorder p-4 rounded-2xl">
+                  <div className="w-16 h-16 rounded-xl bg-brandBlue/10 flex items-center justify-center text-brandBlue shrink-0 border border-brandBlue/20">
+                    <FileText size={24} />
+                  </div>
+                  <div className="flex-grow space-y-2 min-w-0">
+                    <input 
+                      type="file"
+                      accept=".pdf"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          setCvTechEnFile(e.target.files[0]);
+                        }
+                      }}
+                      className="hidden"
+                      ref={cvTechEnInputRef}
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => cvTechEnInputRef.current?.click()}
+                      className="px-4 py-2 bg-darkSurface border border-darkBorder hover:border-brandBlue/45 text-textSecondary hover:text-textPrimary rounded-xl text-xs font-bold cursor-pointer transition-all flex items-center justify-center space-x-1.5 w-fit"
+                    >
+                      <Upload size={12} />
+                      <span>Selecionar PDF</span>
+                    </button>
+                    <p className="text-[10px] text-textSecondary truncate">
+                      {cvTechEnFile ? `Ficheiro: ${cvTechEnFile.name}` : profile.cv_url_tech_en ? `Caminho: ${profile.cv_url_tech_en}` : 'Nenhum currículo técnico em inglês.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <button 
@@ -2451,31 +2593,53 @@ export default function AdminDashboardPage() {
                   <div className="grid md:grid-cols-3 gap-4 items-end">
                     <div className="space-y-2 md:col-span-2">
                       <label className="text-xs font-semibold uppercase tracking-wider text-textSecondary block">Ficheiro de Imagem</label>
-                      <div className="flex items-center space-x-4 bg-darkBg/60 border border-darkBorder p-3 rounded-2xl">
-                        <div className="w-14 h-14 rounded-lg overflow-hidden bg-darkBg border border-darkBorder shrink-0 flex items-center justify-center text-textSecondary">
-                          {aboutImageFile ? (
-                            <img src={URL.createObjectURL(aboutImageFile)} alt="Preview" className="w-full h-full object-cover" />
+                      <div className="bg-darkBg/60 border border-darkBorder p-4 rounded-2xl space-y-3">
+                        <div className="flex items-center justify-between border-b border-darkBorder/40 pb-2">
+                          <span className="text-[10px] font-bold text-textSecondary uppercase tracking-wider">Imagens Selecionadas</span>
+                          <span className="text-[10px] font-mono text-cyan-400 bg-cyan-950/20 border border-cyan-900/30 px-2.5 py-0.5 rounded-full">
+                            {aboutImageFiles.length} foto(s)
+                          </span>
+                        </div>
+                        
+                        {/* Grelha de previews de imagens com scroll horizontal se houver muitas */}
+                        <div className="flex items-center space-x-2.5 overflow-x-auto py-1 max-w-full scrollbar-thin">
+                          {aboutImageFiles.length > 0 ? (
+                            aboutImageFiles.map((file, idx) => (
+                              <div key={idx} className="w-14 h-14 rounded-lg overflow-hidden bg-darkBg border border-darkBorder shrink-0 relative group">
+                                <img src={URL.createObjectURL(file)} alt="Preview" className="w-full h-full object-cover" />
+                              </div>
+                            ))
                           ) : editingAboutImageId && aboutImages.find(i => i.id === editingAboutImageId)?.image_url ? (
-                            <img src={aboutImages.find(i => i.id === editingAboutImageId)?.image_url} alt="Atual" className="w-full h-full object-cover" />
+                            <div className="w-14 h-14 rounded-lg overflow-hidden bg-darkBg border border-darkBorder shrink-0">
+                              <img src={aboutImages.find(i => i.id === editingAboutImageId)?.image_url} alt="Atual" className="w-full h-full object-cover" />
+                            </div>
                           ) : (
-                            <Upload size={18} />
+                            <div className="w-14 h-14 rounded-lg bg-darkBg border border-darkBorder shrink-0 flex items-center justify-center text-textSecondary">
+                              <Upload size={18} />
+                            </div>
                           )}
                         </div>
-                        <div className="flex-grow space-y-2">
+
+                        <div className="flex items-center space-x-3 pt-2">
                           <input 
-                            type="file" accept="image/*" className="hidden" ref={aboutImageInputRef}
+                            type="file" accept="image/*" multiple className="hidden" ref={aboutImageInputRef}
                             onChange={(e) => {
-                              if (e.target.files && e.target.files[0]) {
-                                setAboutImageFile(e.target.files[0]);
+                              if (e.target.files) {
+                                setAboutImageFiles(Array.from(e.target.files));
                               }
                             }}
                           />
                           <button 
                             type="button" onClick={() => aboutImageInputRef.current?.click()}
-                            className="px-3.5 py-1.5 bg-darkSurface border border-darkBorder hover:border-brandBlue/45 text-textSecondary hover:text-textPrimary rounded-lg text-xs font-bold transition-all"
+                            className="px-3.5 py-1.5 bg-darkSurface border border-darkBorder hover:border-brandBlue/45 text-textSecondary hover:text-textPrimary rounded-lg text-xs font-bold transition-all cursor-pointer"
                           >
-                            Selecionar Ficheiro
+                            Selecionar Ficheiro(s)
                           </button>
+                          <p className="text-[10px] text-textSecondary truncate">
+                            {aboutImageFiles.length > 0 
+                              ? `${aboutImageFiles.length} foto(s) selecionada(s).` 
+                              : 'Nenhuma foto selecionada.'}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -2529,7 +2693,7 @@ export default function AdminDashboardPage() {
                           setAboutImageCaption(img.caption || '');
                           setAboutImageCaptionEn(img.caption_en || '');
                           setAboutImageSort(img.sort_order);
-                          setAboutImageFile(null);
+                          setAboutImageFiles([]);
                           setShowAboutImageForm(true);
                         }}
                         className="text-textSecondary hover:text-brandBlue flex items-center space-x-0.5"

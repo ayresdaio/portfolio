@@ -293,7 +293,7 @@ if ($jsonStart !== false) {
             $res = curl_exec($ch);
             $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $curlError = curl_error($ch);
-            curl_close($ch);
+            // curl_close($ch); // Removido: Depreciado no PHP >= 8.0
             
             $fallbackRaw .= "Resposta HTTP recebida do servidor: " . ($code ?: "FALHA DE REDE") . "\n";
             

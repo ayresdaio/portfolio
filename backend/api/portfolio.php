@@ -29,7 +29,7 @@ try {
     $lang = isset($_GET['lang']) ? trim(strtolower($_GET['lang'])) : 'pt';
 
     // 3. Obter os dados do perfil do administrador (Incluindo as colunas _en)
-    $profileStmt = $db->query('SELECT name, role, role_en, bio, bio_en, email, phone, location, location_en, github_url, linkedin_url, facebook_url, instagram_url, avatar_url, cv_url, cv_url_en, about_text, about_text_en, about_image_url FROM profile LIMIT 1');
+    $profileStmt = $db->query('SELECT name, role, role_en, bio, bio_en, email, phone, location, location_en, github_url, linkedin_url, facebook_url, instagram_url, avatar_url, cv_url, cv_url_en, cv_url_tech, cv_url_tech_en, about_text, about_text_en, about_image_url FROM profile LIMIT 1');
     $profile = $profileStmt->fetch();
 
     if ($profile && $lang === 'en') {
@@ -38,9 +38,10 @@ try {
         if (!empty($profile['about_text_en'])) $profile['about_text'] = $profile['about_text_en'];
         if (!empty($profile['location_en'])) $profile['location'] = $profile['location_en'];
         if (!empty($profile['cv_url_en'])) $profile['cv_url'] = $profile['cv_url_en'];
+        if (!empty($profile['cv_url_tech_en'])) $profile['cv_url_tech'] = $profile['cv_url_tech_en'];
     }
     if ($profile) {
-        unset($profile['role_en'], $profile['bio_en'], $profile['about_text_en'], $profile['location_en'], $profile['cv_url_en']);
+        unset($profile['role_en'], $profile['bio_en'], $profile['about_text_en'], $profile['location_en'], $profile['cv_url_en'], $profile['cv_url_tech_en']);
     }
 
     // 3.2 Obter as secções extra do 'Sobre Mim'

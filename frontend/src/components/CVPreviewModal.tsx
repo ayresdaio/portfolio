@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Download, ExternalLink, FileText } from 'lucide-react';
-import { useLanguage } from '../context/LanguageContext';
 
 /**
  * Propriedades aceites pelo Modal de Pré-visualização do Currículo.
@@ -9,6 +8,8 @@ import { useLanguage } from '../context/LanguageContext';
 interface CVPreviewModalProps {
   /** URL do ficheiro de currículo em PDF (geralmente vindo do perfil dinâmico) */
   cvUrl: string;
+  /** Título dinâmico do currículo */
+  title?: string;
   /** Função chamada para fechar o modal */
   onClose: () => void;
 }
@@ -22,8 +23,7 @@ interface CVPreviewModalProps {
  * Inclui alternativas de navegação e compatibilidade total para dispositivos
  * móveis onde a renderização de PDFs em iframes possa ser bloqueada.
  */
-export default function CVPreviewModal({ cvUrl, onClose }: CVPreviewModalProps) {
-  const { language } = useLanguage();
+export default function CVPreviewModal({ cvUrl, title, onClose }: CVPreviewModalProps) {
   
   // Efeito para fechar o modal ao pressionar a tecla ESC (Melhoria de Acessibilidade/A11y)
   useEffect(() => {
@@ -75,7 +75,7 @@ export default function CVPreviewModal({ cvUrl, onClose }: CVPreviewModalProps) 
           </div>
           
           <h3 className="text-xl md:text-2xl font-black text-textPrimary tracking-tight font-display uppercase">
-            Currículo Profissional
+            {title || 'Currículo Profissional'}
           </h3>
           <p className="text-xs text-textSecondary font-medium">
             Explore as competências técnicas e o percurso de carreira de Ayres Daio Neto.
@@ -108,8 +108,8 @@ export default function CVPreviewModal({ cvUrl, onClose }: CVPreviewModalProps) 
               </a>
 
               <a 
-                href={`/backend/api/download_cv.php?lang=${language}`} 
-                download={language === 'en' ? "Resume_Ayres_Daio_Neto.pdf" : "Curriculo_Ayres_Daio_Neto.pdf"}
+                href={cvUrl} 
+                download
                 className="px-3.5 py-1.5 bg-darkBg hover:bg-darkSurface text-textSecondary hover:text-textPrimary border border-darkBorder rounded-xl text-[10px] font-bold flex items-center space-x-1.5 transition-all hover:-translate-y-0.5"
               >
                 <Download size={10} />
@@ -123,7 +123,7 @@ export default function CVPreviewModal({ cvUrl, onClose }: CVPreviewModalProps) 
             <iframe 
               src={`${cvUrl}#toolbar=1&navpanes=0&scrollbar=1`}
               className="w-full h-full border-none"
-              title="Currículo Profissional de Ayres Daio Neto"
+              title={title || "Currículo Profissional de Ayres Daio Neto"}
             />
           </div>
         </div>
@@ -144,8 +144,8 @@ export default function CVPreviewModal({ cvUrl, onClose }: CVPreviewModalProps) 
             </button>
 
             <a 
-              href={`/backend/api/download_cv.php?lang=${language}`} 
-              download={language === 'en' ? "Resume_Ayres_Daio_Neto.pdf" : "Curriculo_Ayres_Daio_Neto.pdf"}
+              href={cvUrl} 
+              download
               className="px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-600 hover:to-cyan-600 text-white font-bold rounded-xl text-xs flex items-center space-x-2 transition-all hover:-translate-y-0.5 shadow-lg shadow-indigo-500/10"
             >
               <Download size={14} />

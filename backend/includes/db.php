@@ -34,10 +34,21 @@ class Database {
                 $pass = $_ENV['DB_PASS'] ?? $_SERVER['DB_PASS'] ?? getenv('DB_PASS');
 
                 // Verificar se o driver mysql está disponível. Caso contrário, usar SQLite como fallback local.
+                // Forçamos também o uso do SQLite se estivermos em ambiente de desenvolvimento ou testes ('development' ou 'testing')
+                // e o host for local (localhost, 127.0.0.1, [::1]), garantindo que na VPS online seja usado sempre o MySQL de produção.
                 $availableDrivers = PDO::getAvailableDrivers();
+                $envMode = $_ENV['ENVIRONMENT'] ?? $_SERVER['ENVIRONMENT'] ?? getenv('ENVIRONMENT') ?? 'development';
+                
+                // Detetar o domínio de execução para diferenciar ambiente local do servidor VPS online
+                $serverName = $_SERVER['SERVER_NAME'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost';
+                $isLocalHost = in_array(strtolower($serverName), ['localhost', '127.0.0.1', '[::1]']) 
+                    || (strpos($serverName, '192.168.') === 0) 
+                    || (strpos($serverName, '10.') === 0);
+                
+                $isLocal = ($envMode === 'testing' || $envMode === 'development') && $isLocalHost;
 
-                if (!in_array('mysql', $availableDrivers)) {
-                    // Fallback transparente para SQLite no ambiente local caso falte o driver pdo_mysql
+                if (!in_array('mysql', $availableDrivers) || $isLocal) {
+                    // Fallback transparente para SQLite no ambiente local caso falte o driver pdo_mysql ou estejamos em desenvolvimento/testes
                     $sqlitePath = dirname(__DIR__) . '/database.sqlite';
                     $dsn = "sqlite:{$sqlitePath}";
                     $options = [

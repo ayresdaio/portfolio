@@ -48,15 +48,29 @@ function buildFrontend() {
  * Utiliza o método nativo fs.cpSync do Node.js para suporte a cópia recursiva multiplataforma.
  */
 function copyBackend() {
-  console.log('A copiar a pasta do backend para a pasta dist...');
+  console.log('A copiar a pasta do backend para a pasta dist (excluindo ficheiros sensíveis)...');
   if (!fs.existsSync(BACKEND_DIR)) {
     console.error('Erro: A pasta "backend" de origem não foi encontrada.');
     process.exit(1);
   }
 
   try {
-    fs.cpSync(BACKEND_DIR, DIST_BACKEND_DIR, { recursive: true });
-    console.log('Pasta do backend copiada com sucesso para "dist/backend".');
+    fs.cpSync(BACKEND_DIR, DIST_BACKEND_DIR, { 
+      recursive: true,
+      filter: (srcPath) => {
+        const relative = path.relative(BACKEND_DIR, srcPath);
+        // Excluir ficheiros de scripts utilitários, bases de dados de teste locais e configurações locais por segurança
+        const ignored = [
+          'scripts',
+          'database.sqlite',
+          'schema.sql',
+          '.env',
+          '.env.example'
+        ];
+        return !ignored.some(item => relative === item || relative.startsWith(item + path.sep));
+      }
+    });
+    console.log('Pasta do backend copiada com sucesso para "dist/backend" (ficheiros sensíveis excluídos).');
   } catch (error) {
     console.error('Erro ao copiar o backend:', error.message);
     process.exit(1);

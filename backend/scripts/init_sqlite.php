@@ -69,6 +69,8 @@ try {
       avatar_url TEXT NULL,
       cv_url TEXT NULL,
       cv_url_en TEXT NULL,
+      cv_url_tech TEXT NULL,
+      cv_url_tech_en TEXT NULL,
       about_text TEXT NULL,
       about_text_en TEXT NULL,
       about_image_url TEXT NULL,

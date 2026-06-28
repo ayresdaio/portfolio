@@ -37,11 +37,33 @@ CREATE TABLE IF NOT EXISTS `profile` (
   `facebook_url` VARCHAR(255) NULL,
   `instagram_url` VARCHAR(255) NULL,
   `avatar_url` VARCHAR(255) NULL, -- Caminho para a imagem de avatar carregada no servidor
-  `cv_url` VARCHAR(255) NULL,     -- Caminho para o ficheiro PDF do currículo carregado no servidor
-  `cv_url_en` VARCHAR(255) NULL,  -- Caminho para o ficheiro PDF do currículo em inglês carregado no servidor
+  `cv_url` VARCHAR(255) NULL,     -- Caminho para o ficheiro PDF do currículo de Full Stack carregado no servidor
+  `cv_url_en` VARCHAR(255) NULL,  -- Caminho para o ficheiro PDF do currículo de Full Stack em inglês carregado no servidor
+  `cv_url_tech` VARCHAR(255) NULL, -- Caminho para o ficheiro PDF do currículo técnico carregado no servidor
+  `cv_url_tech_en` VARCHAR(255) NULL, -- Caminho para o ficheiro PDF do currículo técnico em inglês carregado no servidor
   `about_text` TEXT NULL,         -- Texto longo da secção 'Sobre Mim'
   `about_image_url` VARCHAR(255) NULL, -- Imagem exclusiva da secção 'Sobre Mim'
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabela para as secções adicionais da Bento Grid do Sobre Mim
+CREATE TABLE IF NOT EXISTS `about_sections` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `title` VARCHAR(100) NOT NULL,
+  `title_en` VARCHAR(100) NULL,
+  `content` TEXT NOT NULL,
+  `content_en` TEXT NULL,
+  `icon` VARCHAR(50) NULL,
+  `sort_order` INT DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tabela para a galeria de fotos e legendas do Sobre Mim
+CREATE TABLE IF NOT EXISTS `about_images` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `image_url` VARCHAR(255) NOT NULL,
+  `caption` VARCHAR(255) NULL,
+  `caption_en` VARCHAR(255) NULL,
+  `sort_order` INT DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tabela de projetos (Lista de projetos com imagem, tags e links)
