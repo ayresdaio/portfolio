@@ -226,16 +226,16 @@ export default function HomePage() {
         {/* Lado Direito: Fotografia Flutuante Estilo Estúdio OLED */}
         <div className="flex-grow-0 flex items-center justify-center relative animate-float">
           {/* Orbe de luz néon traseiro com maior opacidade em modo claro para contraste dinâmico */}
-          <div className="absolute inset-0 bg-indigo-500/20 dark:bg-indigo-600/10 rounded-full blur-3xl pointer-events-none scale-75 animate-pulse-glow"></div>
+          <div className="absolute inset-0 bg-indigo-500/20 dark:bg-indigo-600/10 rounded-[2rem] blur-3xl pointer-events-none scale-75 animate-pulse-glow"></div>
           {/* Efeito de moldura flutuante premium com vidro fosco e sombreado de destaque tridimensional no Modo Claro */}
-          <div className="relative w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 rounded-full border border-indigo-200/80 dark:border-darkBorder p-3 bg-white/80 dark:bg-darkSurface/20 backdrop-blur-xl shadow-2xl shadow-indigo-150/45 dark:shadow-2xl dark:shadow-black/85 hover:border-indigo-400 dark:hover:border-indigo-500/20 transition-colors duration-500">
+          <div className="relative w-52 aspect-[3/4] sm:w-72 md:w-80 lg:w-[22rem] rounded-[2rem] border border-indigo-200/80 dark:border-darkBorder p-3 bg-white/80 dark:bg-darkSurface/20 backdrop-blur-xl shadow-2xl shadow-indigo-150/45 dark:shadow-2xl dark:shadow-black/85 hover:border-indigo-400 dark:hover:border-indigo-500/20 transition-colors duration-500">
             {/* Div interior que serve de fundo com matiz suave azul/indigo em modo claro e preto puro OLED em modo escuro */}
-            <div className="w-full h-full rounded-full overflow-hidden bg-indigo-50/20 dark:bg-darkBg flex items-center justify-center relative border border-indigo-150/50 dark:border-darkBorder shadow-inner">
+            <div className="w-full h-full rounded-[1.5rem] overflow-hidden bg-indigo-50/20 dark:bg-darkBg flex items-center justify-center relative border border-indigo-150/50 dark:border-darkBorder shadow-inner">
               {profile.avatar_url ? (
                 <img 
                   src={profile.avatar_url} 
                   alt={profile.name} 
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
+                  className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-700"
                 />
               ) : (
                 <User size={96} className="text-zinc-650" />
@@ -256,8 +256,8 @@ export default function HomePage() {
             <div className="md:col-span-5 flex justify-center">
               <div className="relative group max-w-sm w-full">
                 <div className="absolute -inset-1.5 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-2xl blur opacity-20 group-hover:opacity-35 transition duration-1000"></div>
-                <div className="relative glass-panel p-3 overflow-hidden rounded-2xl bg-darkSurface/40 border border-darkBorder group/carousel">
-                  <div className="aspect-square w-full rounded-xl overflow-hidden bg-darkSurface border border-darkBorder relative">
+                <div className="relative glass-panel p-3 overflow-hidden rounded-[2rem] bg-darkSurface/40 border border-darkBorder group/carousel">
+                  <div className="aspect-[3/4] w-full rounded-[1.5rem] overflow-hidden bg-darkSurface border border-darkBorder relative">
                     {about_images && about_images.length > 0 ? (
                       <>
                         <div 
@@ -270,7 +270,7 @@ export default function HomePage() {
                           <img 
                             src={about_images[activeAboutImageIndex].image_url} 
                             alt={about_images[activeAboutImageIndex].caption || "Sobre mim"} 
-                            className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                            className="w-full h-full object-cover object-top transition-transform duration-700 hover:scale-105"
                           />
                           
                           {/* Legenda PT/EN em overlay */}
@@ -326,7 +326,7 @@ export default function HomePage() {
                       <img 
                         src={profile.about_image_url || profile.avatar_url} 
                         alt="Sobre mim" 
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-darkSurface">
@@ -687,13 +687,13 @@ export default function HomePage() {
 
           {/* Imagem Central */}
           <div 
-            className="relative max-w-4xl max-h-[80vh] flex flex-col items-center justify-center"
+            className="relative max-w-6xl max-h-[90vh] flex flex-col items-center justify-center"
             onClick={(e) => e.stopPropagation()}
           >
             <img 
               src={about_images[lightboxAboutImageIndex].image_url} 
               alt={about_images[lightboxAboutImageIndex].caption || ''} 
-              className="max-w-full max-h-[70vh] object-contain rounded-2xl border border-darkBorder/40 shadow-2xl select-none"
+              className="max-w-full max-h-[82vh] object-contain rounded-2xl border border-darkBorder/40 shadow-2xl select-none"
             />
             {about_images[lightboxAboutImageIndex].caption && (
               <p className="mt-4 text-sm text-textPrimary bg-darkSurface/90 border border-darkBorder/60 px-5 py-2.5 rounded-2xl text-center font-semibold max-w-lg shadow-xl">

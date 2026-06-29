@@ -122,7 +122,7 @@ export default function SobrePage() {
             <div className="cyber-corner cyber-corner-bl"></div>
             <div className="cyber-corner cyber-corner-br"></div>
             
-            <div className="w-full aspect-[4/5] rounded-2xl overflow-hidden bg-darkSurface border border-darkBorder shadow-inner relative group/carousel">
+            <div className="w-full aspect-[3/4] rounded-2xl overflow-hidden bg-darkSurface border border-darkBorder shadow-inner relative group/carousel">
               {about_images && about_images.length > 0 ? (
                 <>
                   {/* Foto Ativa do Carousel */}
@@ -136,7 +136,7 @@ export default function SobrePage() {
                     <img 
                       src={about_images[activeImageIndex].image_url} 
                       alt={about_images[activeImageIndex].caption || profile.name} 
-                      className="w-full h-full object-cover transition-all duration-700 hover:scale-105"
+                      className="w-full h-full object-cover object-top transition-all duration-700 hover:scale-105"
                     />
                     
                     {/* Legenda PT/EN em overlay semi-transparente */}
@@ -192,7 +192,7 @@ export default function SobrePage() {
                 <img 
                   src={profile.about_image_url} 
                   alt={profile.name} 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-zinc-700">
@@ -382,14 +382,14 @@ export default function SobrePage() {
 
           {/* Contentor de Imagem e Legenda */}
           <div 
-            className="max-w-4xl max-h-[85vh] flex flex-col items-center gap-4 relative animate-scale-up cursor-default"
+            className="max-w-6xl max-h-[90vh] flex flex-col items-center gap-4 relative animate-scale-up cursor-default"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative rounded-2xl overflow-hidden border border-darkBorder/40 shadow-2xl">
               <img
                 src={about_images[lightboxImageIndex].image_url}
                 alt={about_images[lightboxImageIndex].caption || ''}
-                className="max-w-full max-h-[75vh] object-contain select-text"
+                className="max-w-full max-h-[82vh] object-contain select-text"
               />
             </div>
             {about_images[lightboxImageIndex].caption && (

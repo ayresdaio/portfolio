@@ -221,6 +221,79 @@ function getCountryFlagEmoji(countryCode: string): string {
   }
 }
 
+/**
+ * Comprime uma imagem do lado do cliente usando HTML5 Canvas.
+ * Reduz a escala da imagem se as dimensões excederem o limite máximo
+ * e aplica compressão JPEG para reduzir drasticamente o peso do ficheiro.
+ *
+ * @param File file Ficheiro de imagem original.
+ * @param number maxWidth Largura máxima permitida (padrão 1200px).
+ * @param number maxHeight Altura máxima permitida (padrão 1200px).
+ * @param number quality Qualidade da compressão entre 0.0 e 1.0 (padrão 0.8).
+ * @returns Promise<File> O ficheiro comprimido.
+ */
+const compressImage = (file: File, maxWidth = 1200, maxHeight = 1200, quality = 0.8): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) {
+      resolve(file);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              resolve(file);
+              return;
+            }
+            const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = () => reject(new Error('Erro ao ler a imagem para compressão.'));
+    };
+    reader.onerror = () => reject(new Error('Erro ao ler o ficheiro original.'));
+  });
+};
+
 export default function AdminDashboardPage() {
   useEffect(() => {
     document.documentElement.classList.add('dark');
@@ -2078,9 +2151,14 @@ export default function AdminDashboardPage() {
                     <input 
                       type="file"
                       accept="image/*"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         if (e.target.files && e.target.files[0]) {
-                          setAvatarFile(e.target.files[0]);
+                          try {
+                            const compressed = await compressImage(e.target.files[0]);
+                            setAvatarFile(compressed);
+                          } catch (err) {
+                            setAvatarFile(e.target.files[0]);
+                          }
                         }
                       }}
                       className="hidden"
@@ -2306,9 +2384,14 @@ export default function AdminDashboardPage() {
                   <input 
                     type="file"
                     accept="image/*"
-                    onChange={(e) => {
+                    onChange={async (e) => {
                       if (e.target.files && e.target.files[0]) {
-                        setAboutImgFile(e.target.files[0]);
+                        try {
+                          const compressed = await compressImage(e.target.files[0]);
+                          setAboutImgFile(compressed);
+                        } catch (err) {
+                          setAboutImgFile(e.target.files[0]);
+                        }
                       }
                     }}
                     className="hidden"
@@ -2623,9 +2706,19 @@ export default function AdminDashboardPage() {
                         <div className="flex items-center space-x-3 pt-2">
                           <input 
                             type="file" accept="image/*" multiple className="hidden" ref={aboutImageInputRef}
-                            onChange={(e) => {
+                            onChange={async (e) => {
                               if (e.target.files) {
-                                setAboutImageFiles(Array.from(e.target.files));
+                                const filesArray = Array.from(e.target.files);
+                                const compressedFiles: File[] = [];
+                                for (const file of filesArray) {
+                                  try {
+                                    const compressed = await compressImage(file);
+                                    compressedFiles.push(compressed);
+                                  } catch (err) {
+                                    compressedFiles.push(file);
+                                  }
+                                }
+                                setAboutImageFiles(compressedFiles);
                               }
                             }}
                           />
